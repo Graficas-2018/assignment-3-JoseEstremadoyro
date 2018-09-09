@@ -1,59 +1,102 @@
-var end;
-function drawCurve(a,b){
+var scene;
+function drawCurve(a,b,orbitRotation){
+
     var curve = new THREE.EllipseCurve(
         a-b,0,
-        a,b,
+        a,b
     );
     var points = curve.getPoints(1000);
     var geo = new THREE.BufferGeometry().setFromPoints(points);
     var mat = new THREE.LineBasicMaterial({color:0x888888});
     var ellipse = new THREE.Line(geo,mat);
     scene.add(ellipse);
+    ellipse.rotation.x = orbitRotation; 
+    ellipse.rotation.y = orbitRotation;
     return ellipse;
+
 }
-function drawSphere(name,size,x,y){
+function drawSphere(name,size,x,y,orbitRotation,ellipseA){
+
+    var geo = new THREE.SphereGeometry(size,32,32); 
+    var text = new THREE.TextureLoader().load("assets/"+name+".jpg");
+    var mat;
+    mat = new THREE.MeshPhongMaterial({map:text});
+    var sphere = new THREE.Mesh(geo,mat);
+    sphere.position.x = x;
+    sphere.position.y = y;
+    sphere.position.z = -ellipseA*Math.sin(orbitRotation);
+
+    // Poles to the north
+    sphere.rotation.x = 90; 
+    scene.add(sphere);
+
+    return sphere
+
+}
+
+function drawSun(name,size){
+
     var geo = new THREE.SphereGeometry(size,32,32); 
     var text = new THREE.TextureLoader().load("assets/"+name+".jpg");
     var mat = new THREE.MeshBasicMaterial({map:text});
     var sphere = new THREE.Mesh(geo,mat);
-    sphere.position.x = x;
-    sphere.position.y = y;
-    scene.add(sphere);
-    return sphere
-}
 
+    // Poles to the north
+    sphere.rotation.x = 90; 
+    scene.add(sphere);
+
+    return sphere
+
+}
 // Planet class function
 function planet(name,size,ellipseA,ellipseB,
         period,orbitalInclination,rotationPeriod){
+
     this.name = name;
     this.size = size/1000000;
     this.ellipseA = ellipseA/10;
     this.ellipseB = ellipseB/10;
     this.rotationPeriod = rotationPeriod;
-    this.orbitalInclination = orbitalInclination;
+    this.orbitalInclination = orbitalInclination/180*Math.PI;
 
     if(ellipseA){
 
         // Draw the ellipses
-        this.ellipse = drawCurve(this.ellipseA,this.ellipseB);
-		this.ellipse.rotation.x = orbitalInclination/180*Math.PI;
-		this.ellipse.rotation.y = orbitalInclination/180*Math.PI;
+        this.ellipse = drawCurve(
+            this.ellipseA,
+            this.ellipseB,
+            this.orbitalInclination
+        );
 
         // Load texture
         // Draw the planet
 		// Scales are modified for visual easiness 
-        this.sphere = drawSphere(name,this.size*15,this.ellipseA,0);
+        this.sphere = drawSphere(
+            name,
+            this.size*15,
+            this.ellipseA+this.size/2,
+            this.size/2,
+            this.orbitalInclination,
+            this.ellipseA
+        );
+
     }
     else{
 		// Scales are modified for visual easiness 
-        this.sphere = drawSphere(name,this.size*2,0,0);
+        this.sphere = drawSun(
+            name,
+            this.size*2,
+            0,
+            0,
+            this.orbitalInclination,
+            this.ellipseA
+        );
     }
 
 }
 function onZoom(camera,renderer){
     return function(event){
-        var value = Math.pow(2,event.target.value);
-        console.log(value);
+        var value = Math.pow(2,event.target.value)-1;
         camera.position.z = value;
         camera.position.y = -value;
         renderer.render(scene,camera);
@@ -66,7 +109,6 @@ function onMove(camera,renderer,xx,yy){
     return function(event){
         var x = (startx-event.clientX)/5000*camera.position.z;
         var y = (starty-event.clientY)/5000*camera.position.z;
-        console.log(startx,starty,x,y)
         camera.position.x += x;
         camera.position.y -= y;
         renderer.render(scene,camera);
@@ -98,7 +140,6 @@ document.addEventListener("DOMContentLoaded",function(event){
     });
     var move; 
     canvas.addEventListener("mousedown",function(event){
-        console.log("mousedown",event.clientX,event.clientY);
         move = onMove(camera,renderer,event.clientX,event.clientY)
         document.addEventListener("mousemove",move);
     });
@@ -120,10 +161,11 @@ document.addEventListener("DOMContentLoaded",function(event){
 			 scene.background = texture;  
 		});
 
+    var sun = new planet("sun",695508*2,null,null,88,0,1407.6);
+
     // Planet information
     // Data taken from https://nssdc.gsfc.nasa.gov/planetary/factsheet/
     planets = [
-        new planet("sun",695508*2,null,null,88,0,1407.6),
         new planet("mercury",4879,57.9,56.66,88,7,1407.6),
         new planet("venus",12104,108.2,108.19,224.7,3.4,5832),
         new planet("earth",12756,149.6,149.57,365.2,0,23.9),
@@ -134,7 +176,14 @@ document.addEventListener("DOMContentLoaded",function(event){
         new planet("neptune",49528,4495.1,4494.81,59800,1.8,16.1),
         new planet("pluto",2370,5906.35,5720.611,90560,17.2,153.3)
     ];
-    scene.add(new THREE.HemisphereLight(0xffffff,0xffffff,100));
+
+    // Ambient Light
+    scene.add(new THREE.AmbientLight(0x666666));
+
+    // Point Light
+    var light = new THREE.PointLight();
+    
+    scene.add(light);
 
     // Animate planets
     renderer.render(scene,camera);
