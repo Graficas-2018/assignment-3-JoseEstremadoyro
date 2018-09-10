@@ -1,4 +1,22 @@
 var scene;
+var speed =.1;
+var camera;
+var renderer;
+var sun;
+var planets;
+var stop = false;
+function stopf(){
+    stop=true;
+}
+function animate(){
+  // run animation of all objects
+  if(!stop)
+    requestAnimationFrame(animate);
+  renderer.render(scene,camera);
+  // animate next frame 
+  sun.animate();
+  planets.map(x=>x.animate()); 
+}
 function drawCurve(a,b,orbitRotation){
 
     var curve = new THREE.EllipseCurve(
@@ -48,6 +66,7 @@ function drawSun(name,size){
     return sphere
 
 }
+
 // Planet class function
 function planet(name,size,ellipseA,ellipseB,
         period,orbitalInclination,rotationPeriod){
@@ -56,8 +75,10 @@ function planet(name,size,ellipseA,ellipseB,
     this.size = size/1000000;
     this.ellipseA = ellipseA/10;
     this.ellipseB = ellipseB/10;
+    this.period = period;
     this.rotationPeriod = rotationPeriod;
     this.orbitalInclination = orbitalInclination/180*Math.PI;
+    this.degree = 0;
 
     if(ellipseA){
 
@@ -79,6 +100,37 @@ function planet(name,size,ellipseA,ellipseB,
             this.orbitalInclination,
             this.ellipseA
         );
+        this.animate = ()=>{
+            this.degree += 2*Math.PI/this.period*speed;
+            this.sphere.rotation.y+=2*Math.PI/this.rotationPeriod*speed;
+            this.sphere.position.x = -(
+                this.ellipseA*this.ellipseB
+            )/Math.sqrt(
+                Math.pow(this.ellipseB,2)+
+                Math.pow(this.ellipseA,2)*
+                Math.pow((Math.tan(this.degree)),2)
+            )-this.ellipseA+this.ellipseB;
+            this.sphere.position.y = -(
+                this.ellipseA*this.ellipseB
+            )/Math.sqrt(
+                Math.pow(this.ellipseA,2)+
+                Math.pow(this.ellipseB,2)/
+                Math.pow((Math.tan(this.degree)),2)
+            );
+            //console.log(this.degree);
+            if(this.degree <= 3*Math.PI/2 
+                    && this.degree >= Math.PI/2){
+                this.sphere.position.x *= -1;
+            }
+            if(this.degree >= 0) {
+                this.sphere.position.y *= -1;
+            }
+            if(this.degree >=2*Math.PI){
+                this.degree = 0;
+            }
+            //console.log(this.sphere.position,this.name,this.ellipseA,this.ellipseB);
+
+        }
 
     }
     else{
@@ -91,6 +143,9 @@ function planet(name,size,ellipseA,ellipseB,
             this.orbitalInclination,
             this.ellipseA
         );
+        this.animate = ()=>{
+            this.sphere.rotation.y+=2*Math.PI/this.rotationPeriod*speed;
+        }; 
     }
 
 }
@@ -123,7 +178,7 @@ document.addEventListener("DOMContentLoaded",function(event){
     scene = new THREE.Scene();
     var width = window.innerWidth;
     var height = window.innerHeight;
-    var camera = new THREE.PerspectiveCamera(
+    camera = new THREE.PerspectiveCamera(
         60,window.innerWidth/window.innerHeight,0.1,10000);
 
     camera.position.z = 100;
@@ -132,7 +187,7 @@ document.addEventListener("DOMContentLoaded",function(event){
     // camera.rotation.z = 90;
 
     var canvas = document.getElementById("systemCanvas");
-    var renderer = new THREE.WebGLRenderer({
+    renderer = new THREE.WebGLRenderer({
         canvas:canvas,
         antialias:true,
         logarithmicdepthbuffer:true,
@@ -161,7 +216,7 @@ document.addEventListener("DOMContentLoaded",function(event){
 			 scene.background = texture;  
 		});
 
-    var sun = new planet("sun",695508*2,null,null,88,0,1407.6);
+    sun = new planet("sun",695508*2,null,null,null,null,24.47);
 
     // Planet information
     // Data taken from https://nssdc.gsfc.nasa.gov/planetary/factsheet/
@@ -185,8 +240,7 @@ document.addEventListener("DOMContentLoaded",function(event){
     
     scene.add(light);
 
-    // Animate planets
-    renderer.render(scene,camera);
+    animate();
 
 });
 
