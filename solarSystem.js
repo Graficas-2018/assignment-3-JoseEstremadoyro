@@ -28,8 +28,8 @@ function drawCurve(a,b,orbitRotation){
     var mat = new THREE.LineBasicMaterial({color:0x888888});
     var ellipse = new THREE.Line(geo,mat);
     scene.add(ellipse);
-    ellipse.rotation.x = orbitRotation; 
-    ellipse.rotation.y = orbitRotation;
+    // ellipse.rotation.x = orbitRotation; 
+    // ellipse.rotation.y = orbitRotation;
     return ellipse;
 
 }
@@ -42,7 +42,7 @@ function drawSphere(name,size,x,y,orbitRotation,ellipseA){
     var sphere = new THREE.Mesh(geo,mat);
     sphere.position.x = x;
     sphere.position.y = y;
-    sphere.position.z = -ellipseA*Math.sin(orbitRotation);
+    // sphere.position.z = -ellipseA*Math.sin(orbitRotation);
 
     // Poles to the north
     sphere.rotation.x = 90; 
@@ -101,6 +101,7 @@ function planet(name,size,ellipseA,ellipseB,
             this.ellipseA
         );
         this.animate = ()=>{
+
             this.degree += 2*Math.PI/this.period*speed;
             this.sphere.rotation.y+=2*Math.PI/this.rotationPeriod*speed;
             this.sphere.position.x = -(
@@ -109,7 +110,7 @@ function planet(name,size,ellipseA,ellipseB,
                 Math.pow(this.ellipseB,2)+
                 Math.pow(this.ellipseA,2)*
                 Math.pow((Math.tan(this.degree)),2)
-            )-this.ellipseA+this.ellipseB;
+            );//+this.ellipseA-this.ellipseB;
             this.sphere.position.y = -(
                 this.ellipseA*this.ellipseB
             )/Math.sqrt(
@@ -117,12 +118,17 @@ function planet(name,size,ellipseA,ellipseB,
                 Math.pow(this.ellipseB,2)/
                 Math.pow((Math.tan(this.degree)),2)
             );
-            //console.log(this.degree);
+            /*this.sphere.position.z = (
+                this.sphere.position.x*
+                Math.sin(this.orbitalInclination)
+            );*/
+            // console.log(this.name,this.sphere.position.z)
+            // console.log(this.degree);
             if(this.degree <= 3*Math.PI/2 
                     && this.degree >= Math.PI/2){
                 this.sphere.position.x *= -1;
             }
-            if(this.degree >= 0) {
+            if(this.degree >= 0 && this.degree <= Math.PI) {
                 this.sphere.position.y *= -1;
             }
             if(this.degree >=2*Math.PI){
