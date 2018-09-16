@@ -200,6 +200,8 @@ document.addEventListener("DOMContentLoaded",function(event){
         alpha:true
     });
     var move; 
+    canvas.addEventListener('contextmenu', event => event.preventDefault());
+    
     canvas.addEventListener("mousedown",function(event){
         move = onMove(camera,renderer,event.clientX,event.clientY)
         document.addEventListener("mousemove",move);
